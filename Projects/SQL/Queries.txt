@@ -1,0 +1,90 @@
+Query 1
+
+What is the total amount of films done by the actors?
+
+select id, sub.full_name, COUNT(*)
+from
+(
+select f.actor_id id, CONCAT(first_name, ' ', last_name) as full_name, title
+from actor a
+join film_actor f
+on a.actor_id=f.actor_id
+join film fi
+on fi.film_id=f.film_id
+group by 1, 2, 3
+order by 1
+) sub
+group by 2,1 
+order by 3 DESC
+
+
+Query 2
+
+How can films be categorized accoring to their show lengths?
+
+select sub.full_name, sub.title, sub.length,
+case
+when sub.length<=60 then '1 hour or less'
+when sub.length>60 and sub.length<=120 then 'Between 1 to 2 hours'
+when sub.length>120 and sub.length<=180 then 'Between 2 to 3 hours'
+else 'more than 3 hours'
+end as filmlen_groups
+from
+(
+select CONCAT(first_name, ' ', last_name) as full_name, fi.title, fi.length
+from actor a
+join film_actor f
+on a.actor_id=f.actor_id
+join film fi
+on fi.film_id=f.film_id
+) sub
+
+
+Query 3
+
+What is the total number of movies that come under different categories of its length?
+
+select distinct filmlen_groups banners, COUNT(title) OVER (PARTITION BY filmlen_groups) as count_bybanners
+from
+(
+select sub.full_name, sub.title, sub.length,
+case
+when sub.length<=60 then '1 hour or less'
+when sub.length>60 and sub.length<=120 then 'Between 1 to 2 hours'
+when sub.length>120 and sub.length<=180 then 'Between 2 to 3 hours'
+else 'more than 3 hours'
+end as filmlen_groups
+from
+(
+select CONCAT(first_name, ' ', last_name) as full_name, fi.title, fi.length
+from actor a
+join film_actor f
+on a.actor_id=f.actor_id
+join film fi
+on fi.film_id=f.film_id
+) sub
+)sub1
+
+
+Query 4
+
+What is the number of times a movie has been rented out?
+
+WITH t1 AS (select*
+from category AS c
+join film_category AS fc
+on fc.category_id = c.category_id
+join film AS f
+on f.film_id = fc.film_id
+join Inventory AS i
+on i.film_id = f.film_id
+join rental AS r
+on i.inventory_id = r.inventory_id
+where name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+order by title)
+
+select title AS film_title, name AS category_name, COUNT(*) AS rental_count
+from t1
+group by 1,2
+order by category_name, film_title, rental_count DESC
+
